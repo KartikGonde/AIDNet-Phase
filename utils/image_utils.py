@@ -35,6 +35,22 @@ def load_img(filepath):
     img = img/255.
     return img
 
+def is_image_file_extended(filename):
+    """Check for common image extensions (png, jpg, jpeg)."""
+    return any(filename.lower().endswith(ext) for ext in [".png", ".jpg", ".jpeg"])
+
+def load_img_sidebyside(filepath, size=256):
+    """Load a side-by-side concatenated image (left=input, right=target).
+    Returns (input_img, target_img) each of shape (size, size, 3), float32, [0,1]."""
+    img = cv2.cvtColor(cv2.imread(filepath), cv2.COLOR_BGR2RGB)
+    h, w, _ = img.shape
+    mid = w // 2
+    inp = img[:, :mid, :]   # left half  = degraded / hazy
+    tgt = img[:, mid:, :]   # right half = clean / target
+    inp = cv2.resize(inp, (size, size)).astype(np.float32) / 255.
+    tgt = cv2.resize(tgt, (size, size)).astype(np.float32) / 255.
+    return inp, tgt
+
 def save_img(filepath, img):
     cv2.imwrite(filepath,cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
 

@@ -3,6 +3,7 @@ import os
 from torch.utils.data import Dataset
 import torch
 from utils import is_png_file, load_img, Augment_RGB_torch
+from utils import is_image_file_extended, load_img_sidebyside
 import torch.nn.functional as F
 import random
 
@@ -216,3 +217,86 @@ class DataLoaderTestSR(Dataset):
         LR = LR.permute(2,0,1)
 
         return LR, LR_filename
+
+##################################################################################################
+# Side-by-side concatenated images (left = input/hazy, right = target/clean)
+# Used for Sate1K dataset where pairs are stored in a single image file.
+##################################################################################################
+
+class DataLoaderTrainSideBySide(Dataset):
+    """Training loader for side-by-side concatenated images.
+    
+    Expects a flat directory of images where each file contains
+    left half = degraded/hazy, right half = clean/ground-truth.
+    """
+    def __init__(self, rgb_dir, img_options=None, target_transform=None):
+        super(DataLoaderTrainSideBySide, self).__init__()
+        self.target_transform = target_transform
+
+        all_files = sorted(os.listdir(rgb_dir))
+        self.filenames = [os.path.join(rgb_dir, x) for x in all_files if is_image_file_extended(x)]
+        self.img_options = img_options
+        self.tar_size = len(self.filenames)
+
+    def __len__(self):
+        return self.tar_size
+
+    def __getitem__(self, index):
+        tar_index = index % self.tar_size
+        filepath = self.filenames[tar_index]
+
+        inp_img, tgt_img = load_img_sidebyside(filepath)
+
+        noisy = torch.from_numpy(np.float32(inp_img)).permute(2, 0, 1)
+        clean = torch.from_numpy(np.float32(tgt_img)).permute(2, 0, 1)
+
+        clean_filename = os.path.split(filepath)[-1]
+        noisy_filename = clean_filename
+
+        # Random crop
+        ps = self.img_options['patch_size']
+        H = clean.shape[1]
+        W = clean.shape[2]
+
+        if H - ps == 0:
+            r, c = 0, 0
+        else:
+            r = np.random.randint(0, H - ps)
+            c = np.random.randint(0, W - ps)
+        clean = clean[:, r:r + ps, c:c + ps]
+        noisy = noisy[:, r:r + ps, c:c + ps]
+
+        # Augmentation
+        apply_trans = transforms_aug[random.getrandbits(3)]
+        clean = getattr(augment, apply_trans)(clean)
+        noisy = getattr(augment, apply_trans)(noisy)
+
+        return clean, noisy, clean_filename, noisy_filename
+
+
+class DataLoaderValSideBySide(Dataset):
+    """Validation loader for side-by-side concatenated images."""
+    def __init__(self, rgb_dir, target_transform=None):
+        super(DataLoaderValSideBySide, self).__init__()
+        self.target_transform = target_transform
+
+        all_files = sorted(os.listdir(rgb_dir))
+        self.filenames = [os.path.join(rgb_dir, x) for x in all_files if is_image_file_extended(x)]
+        self.tar_size = len(self.filenames)
+
+    def __len__(self):
+        return self.tar_size
+
+    def __getitem__(self, index):
+        tar_index = index % self.tar_size
+        filepath = self.filenames[tar_index]
+
+        inp_img, tgt_img = load_img_sidebyside(filepath)
+
+        noisy = torch.from_numpy(np.float32(inp_img)).permute(2, 0, 1)
+        clean = torch.from_numpy(np.float32(tgt_img)).permute(2, 0, 1)
+
+        clean_filename = os.path.split(filepath)[-1]
+        noisy_filename = clean_filename
+
+        return clean, noisy, clean_filename, noisy_filename

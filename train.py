@@ -143,6 +143,9 @@ def parse_args():
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--mixup", action="store_true", default=False,
                    help="Enable MixUp augmentation")
+    p.add_argument("--side_by_side", action="store_true", default=False,
+                   help="Images are side-by-side (left=hazy, right=clean). "
+                        "Use for Sate1K dataset.")
 
     # loss weights (paper Eq. 5)
     p.add_argument("--lambda_l1", type=float, default=1.0)
@@ -199,8 +202,9 @@ def main():
     print(f"LR          : {args.lr}")
 
     # ----- data -----
-    train_dataset = get_training_data(train_dir, {"patch_size": args.patch_size})
-    val_dataset = get_validation_data(val_dir)
+    train_dataset = get_training_data(train_dir, {"patch_size": args.patch_size},
+                                      side_by_side=args.side_by_side)
+    val_dataset = get_validation_data(val_dir, side_by_side=args.side_by_side)
 
     train_loader = DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=True,
