@@ -157,7 +157,7 @@ def parse_args():
     p.add_argument("--save_dir", type=str, default="./checkpoints")
     p.add_argument("--save_every", type=int, default=10,
                    help="Save checkpoint every N epochs")
-    p.add_argument("--val_every", type=int, default=5,
+    p.add_argument("--val_every", type=int, default=1,
                    help="Run validation every N epochs")
     p.add_argument("--resume", type=str, default=None,
                    help="Path to checkpoint to resume from")
@@ -298,13 +298,13 @@ def main():
 
         avg_loss = epoch_loss / len(train_loader)
         avg_psnr = epoch_psnr / len(train_loader)
-        print(f"[Epoch {epoch}] Train Loss: {avg_loss:.4f} | Train PSNR: {avg_psnr:.2f} dB | "
+        print(f"[Epoch {epoch}] Average Train Loss: {avg_loss:.4f} | Average Train PSNR: {avg_psnr:.2f} dB | "
               f"LR: {optimizer.param_groups[0]['lr']:.2e}")
 
         # ----- validation -----
         if epoch % args.val_every == 0 or epoch == args.epochs:
             val_psnr = validate(model, val_loader, device)
-            print(f"[Epoch {epoch}] Val PSNR: {val_psnr:.2f} dB")
+            print(f"[Epoch {epoch}] Average Val PSNR: {val_psnr:.2f} dB")
 
             if val_psnr > best_psnr:
                 best_psnr = val_psnr

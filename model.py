@@ -169,7 +169,7 @@ class UpSample(nn.Module):
 class Network(nn.Module):
     def __init__(
         self,
-        channels=[48, 96, 192],
+        channels=[30, 60, 120],
         num_blocks=[2, 2, 2, 2, 2],
         num_heads=[1, 2, 4, 2, 1],
         expansion_factor=2.66,

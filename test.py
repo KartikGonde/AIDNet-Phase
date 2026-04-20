@@ -23,6 +23,7 @@ parser.add_argument("--gpus", default="0", type=str)
 parser.add_argument("--checkpoint", type=str, default=None,
                     help="Path to checkpoint (auto-resolved from dataset if not given)")
 parser.add_argument("--save_images", action="store_true", default=False)
+parser.add_argument("--output_dir", type=str, default=None, help="Separate folder to save resulting images")
 
 args = parser.parse_args()
 
@@ -37,11 +38,14 @@ dataset_map = {
 }
 
 input_dir, result_dir, default_ckpt = dataset_map[args.dataset]
+if args.output_dir:
+    result_dir = args.output_dir
 checkpoint_dir = args.checkpoint or default_ckpt
 
 utils.mkdir(result_dir)
 
-test_dataset = get_validation_data(input_dir)
+is_sate1k = "Sate1K" in args.dataset
+test_dataset = get_validation_data(input_dir, side_by_side=is_sate1k)
 test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=0, drop_last=False)
 
 # Load model
